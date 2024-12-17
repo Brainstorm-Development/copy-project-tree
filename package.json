@@ -8,7 +8,7 @@
   },
   "description": "Copies the project or folder tree structure to clipboard.",
   "icon": "icon.webp",
-  "version": "0.0.4",
+  "version": "1.0.1",
   "engines": {
     "vscode": "^1.96.0"
   },
