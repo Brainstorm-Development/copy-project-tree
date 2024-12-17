@@ -1,0 +1,107 @@
+{
+  "name": "copy-project-tree",
+  "displayName": "Copy Project Tree",
+  "publisher": "BrainstormDevelopment",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrainstormDevelopment/copy-project-tree"
+  },
+  "description": "Copies the project or folder tree structure to clipboard.",
+  "icon": "icon.webp",
+  "version": "0.0.4",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:extension.copyProjectTree",
+    "onCommand:extension.copyFolderTree"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.copyProjectTree",
+        "title": "Copy Project Tree Structure"
+      },
+      {
+        "command": "extension.copyFolderTree",
+        "title": "Copy Folder Tree Structure"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "extension.copyProjectTree",
+          "when": "explorerViewletFocus && resourceUri == null",
+          "group": "navigation"
+        },
+        {
+          "command": "extension.copyFolderTree",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Copy Project Tree Configuration",
+      "properties": {
+        "copyProjectTree.excludedFolders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Add or remove folders to exclude when copying tree structure. Default exclusions are: 'node_modules', '.git', etc."
+        },
+        "copyProjectTree.maxDepth": {
+          "type": "number",
+          "default": -1,
+          "description": "Maximum depth for the tree structure. Use -1 for no limit."
+        },
+        "copyProjectTree.includeHidden": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include hidden files and folders in the tree structure."
+        },
+        "copyProjectTree.outputFormat": {
+          "type": "string",
+          "enum": [
+            "plain",
+            "markdown",
+            "json"
+          ],
+          "default": "plain",
+          "description": "Output format for the tree structure. Options: plain, markdown, json."
+        },
+        "copyProjectTree.copyToFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, save the tree structure to a file instead of copying it to the clipboard."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.96.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "eslint": "^9.16.0",
+    "typescript": "^5.7.2",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}
