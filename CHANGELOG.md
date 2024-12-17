@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.2] - 2024-12-17
+### Added
+- Fixed Git repository link.
+
 ## [1.0.1] - 2024-12-17
 ### Added
 - Added Git repository.
@@ -11,5 +15,6 @@
   - Customizable exclusion list.
   - Output formats (plain, markdown, JSON).
   - Copy to clipboard or save to file.
+
 
 
