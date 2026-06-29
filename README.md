@@ -1,7 +1,7 @@
 # Copy Project Tree
 
-[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/BrainstormDevelopment.copy-project-tree?label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=BrainstormDevelopment.copy-project-tree)
-[![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/BrainstormDevelopment.copy-project-tree?label=installs)](https://marketplace.visualstudio.com/items?itemName=BrainstormDevelopment.copy-project-tree)
+[![Visual Studio Marketplace Version](https://vsmarketplacebadges.dev/version-short/BrainstormDevelopment.copy-project-tree.svg)](https://marketplace.visualstudio.com/items?itemName=BrainstormDevelopment.copy-project-tree)
+[![Visual Studio Marketplace Installs](https://vsmarketplacebadges.dev/installs-short/BrainstormDevelopment.copy-project-tree.svg)](https://marketplace.visualstudio.com/items?itemName=BrainstormDevelopment.copy-project-tree)
 [![CI](https://github.com/Brainstorm-Development/copy-project-tree/actions/workflows/ci.yml/badge.svg)](https://github.com/Brainstorm-Development/copy-project-tree/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/Brainstorm-Development/copy-project-tree)](LICENSE.md)
 

@@ -8,7 +8,7 @@
   },
   "description": "Copy clean project and folder tree structures to your clipboard or a file.",
   "icon": "icon.webp",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "MIT",
   "homepage": "https://github.com/Brainstorm-Development/copy-project-tree#readme",
   "bugs": {

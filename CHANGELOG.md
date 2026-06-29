@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.0.1] - 2026-06-29
+### Changed
+- Refreshed the Marketplace icon with a simpler project-tree mark that keeps the original green palette.
+- Replaced retired Marketplace Shields badges with current Visual Studio Marketplace badge URLs.
+
 ## [2.0.0] - 2026-06-29
 ### Added
 - Added deterministic tree sorting with folders-first and alphabetical modes.
@@ -36,5 +41,4 @@
   - Customizable exclusion list.
   - Output formats (plain, markdown, JSON).
   - Copy to clipboard or save to file.
-
 
