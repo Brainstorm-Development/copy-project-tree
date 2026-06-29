@@ -6,15 +6,32 @@
     "type": "git",
     "url": "https://github.com/Brainstorm-Development/copy-project-tree"
   },
-  "description": "Copies the project or folder tree structure to clipboard.",
+  "description": "Copy clean project and folder tree structures to your clipboard or a file.",
   "icon": "icon.webp",
-  "version": "1.0.2",
+  "version": "2.0.0",
+  "license": "MIT",
+  "homepage": "https://github.com/Brainstorm-Development/copy-project-tree#readme",
+  "bugs": {
+    "url": "https://github.com/Brainstorm-Development/copy-project-tree/issues"
+  },
   "engines": {
     "vscode": "^1.96.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "tree",
+    "project tree",
+    "folder tree",
+    "clipboard",
+    "markdown",
+    "json"
+  ],
+  "galleryBanner": {
+    "color": "#1f6feb",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onCommand:extension.copyProjectTree",
     "onCommand:extension.copyFolderTree"
@@ -55,7 +72,15 @@
             "type": "string"
           },
           "default": [],
-          "description": "Add or remove folders to exclude when copying tree structure. Default exclusions are: 'node_modules', '.git', etc."
+          "description": "Additional file or folder names to exclude. Default exclusions include node_modules, .git, out, build, dist, and common cache folders."
+        },
+        "copyProjectTree.excludedPatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Glob-like patterns to exclude from the tree. Use * for one path segment and ** for nested paths, for example docs/** or *.log."
         },
         "copyProjectTree.maxDepth": {
           "type": "number",
@@ -66,6 +91,25 @@
           "type": "boolean",
           "default": false,
           "description": "Include hidden files and folders in the tree structure."
+        },
+        "copyProjectTree.includeFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include files in the tree structure. Disable this to copy folders only."
+        },
+        "copyProjectTree.includeRoot": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include the selected project or folder name as the first line in plain text and Markdown output."
+        },
+        "copyProjectTree.sortOrder": {
+          "type": "string",
+          "enum": [
+            "foldersFirst",
+            "alphabetical"
+          ],
+          "default": "foldersFirst",
+          "description": "Sort entries with folders first or all entries alphabetically."
         },
         "copyProjectTree.outputFormat": {
           "type": "string",
@@ -91,17 +135,17 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "node --test out/test/**/*.test.js",
+    "package": "vsce package",
+    "publish:marketplace": "vsce publish"
   },
   "devDependencies": {
-    "@types/vscode": "^1.96.0",
-    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^8.17.0",
-    "@typescript-eslint/parser": "^8.17.0",
-    "eslint": "^9.16.0",
-    "typescript": "^5.7.2",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@types/vscode": "1.96.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@typescript-eslint/parser": "^8.62.0",
+    "@vscode/vsce": "^3.9.2",
+    "eslint": "^9.39.4",
+    "typescript": "^5.9.3"
   }
 }

@@ -1,63 +1,198 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getTreeStructure, formatTreeStructure, defaultExcludeFolders } from './treeGenerator';
+import {
+    defaultExcludeFolders,
+    generateTreeStructure,
+    OutputFormat,
+    SortOrder,
+    TreeOptions
+} from './treeGenerator';
 
-function getExclusionList(): string[] {
-    const userExcludedFolders =
-        vscode.workspace.getConfiguration('copyProjectTree').get<string[]>('excludedFolders') || [];
-    return [...new Set([...defaultExcludeFolders, ...userExcludedFolders])];
+interface ExtensionSettings {
+    copyToFile: boolean;
+    outputFormat: OutputFormat;
+    treeOptions: TreeOptions;
 }
 
-async function copyTreeStructure(treeStructure: string, fileName: string) {
-    const copyToFile = vscode.workspace
-        .getConfiguration('copyProjectTree')
-        .get<boolean>('copyToFile') || false;
-
-    if (copyToFile) {
-        const uri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(path.join(process.cwd(), fileName)),
-            filters: { 'Text Files': ['txt'], 'Markdown Files': ['md'], 'JSON Files': ['json'] }
-        });
-
-        if (uri) {
-            fs.writeFileSync(uri.fsPath, treeStructure);
-            vscode.window.showInformationMessage(`Tree structure saved to ${uri.fsPath}`);
-        }
-    } else {
-        vscode.env.clipboard.writeText(treeStructure);
-        vscode.window.showInformationMessage('Tree structure copied to clipboard!');
-    }
-}
+const OUTPUT_FORMATS: OutputFormat[] = ['plain', 'markdown', 'json'];
+const SORT_ORDERS: SortOrder[] = ['foldersFirst', 'alphabetical'];
 
 export async function copyProjectTree() {
-    const rootPath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-    if (!rootPath) {
-        vscode.window.showErrorMessage('No project is open.');
+    const workspaceFolder = await pickWorkspaceFolder();
+
+    if (!workspaceFolder) {
         return;
     }
 
-    const exclude = getExclusionList();
-    const maxDepth = vscode.workspace.getConfiguration('copyProjectTree').get<number>('maxDepth') || -1;
-    const includeHidden = vscode.workspace.getConfiguration('copyProjectTree').get<boolean>('includeHidden') || false;
-    const outputFormat = vscode.workspace.getConfiguration('copyProjectTree').get<string>('outputFormat') || 'plain';
-
-    const treeStructure = getTreeStructure(rootPath, '', exclude, maxDepth, includeHidden);
-    const formattedTree = formatTreeStructure(treeStructure, outputFormat);
-
-    await copyTreeStructure(formattedTree, 'project_tree.txt');
+    await copyTreeForPath(workspaceFolder.uri.fsPath, 'project_tree', workspaceFolder.uri.fsPath);
 }
 
-export async function copyFolderTree(resourceUri: vscode.Uri) {
-    const folderPath = resourceUri.fsPath;
+export async function copyFolderTree(resourceUri?: vscode.Uri) {
+    const folderUri = resourceUri ?? (await pickFolderUri());
 
-    const exclude = getExclusionList();
-    const maxDepth = vscode.workspace.getConfiguration('copyProjectTree').get<number>('maxDepth') || -1;
-    const includeHidden = vscode.workspace.getConfiguration('copyProjectTree').get<boolean>('includeHidden') || false;
-    const outputFormat = vscode.workspace.getConfiguration('copyProjectTree').get<string>('outputFormat') || 'plain';
+    if (!folderUri) {
+        return;
+    }
 
-    const treeStructure = getTreeStructure(folderPath, '', exclude, maxDepth, includeHidden);
-    const formattedTree = formatTreeStructure(treeStructure, outputFormat);
+    const folderPath = folderUri.fsPath;
 
-    await copyTreeStructure(formattedTree, `${path.basename(folderPath)}_tree.txt`);
+    try {
+        const stat = await fs.promises.stat(folderPath);
+
+        if (!stat.isDirectory()) {
+            void vscode.window.showErrorMessage('Select a folder to copy its tree structure.');
+            return;
+        }
+    } catch (error) {
+        void vscode.window.showErrorMessage(`Unable to read selected folder: ${getErrorMessage(error)}`);
+        return;
+    }
+
+    await copyTreeForPath(folderPath, `${path.basename(folderPath)}_tree`, folderPath);
+}
+
+async function copyTreeForPath(rootPath: string, fileBaseName: string, defaultSaveFolder: string) {
+    try {
+        const settings = getExtensionSettings();
+        const treeStructure = generateTreeStructure(rootPath, settings.treeOptions, settings.outputFormat);
+
+        await writeTreeStructure(treeStructure, fileBaseName, defaultSaveFolder, settings);
+    } catch (error) {
+        void vscode.window.showErrorMessage(`Unable to copy tree structure: ${getErrorMessage(error)}`);
+    }
+}
+
+function getExtensionSettings(): ExtensionSettings {
+    const configuration = vscode.workspace.getConfiguration('copyProjectTree');
+    const outputFormat = getAllowedValue(
+        configuration.get<string>('outputFormat'),
+        OUTPUT_FORMATS,
+        'plain'
+    );
+
+    return {
+        copyToFile: configuration.get<boolean>('copyToFile') ?? false,
+        outputFormat,
+        treeOptions: {
+            excludedNames: getExclusionList(configuration),
+            excludedPatterns: configuration.get<string[]>('excludedPatterns') ?? [],
+            maxDepth: configuration.get<number>('maxDepth') ?? -1,
+            includeHidden: configuration.get<boolean>('includeHidden') ?? false,
+            includeFiles: configuration.get<boolean>('includeFiles') ?? true,
+            includeRoot: configuration.get<boolean>('includeRoot') ?? false,
+            sortOrder: getAllowedValue(
+                configuration.get<string>('sortOrder'),
+                SORT_ORDERS,
+                'foldersFirst'
+            )
+        }
+    };
+}
+
+function getExclusionList(configuration: vscode.WorkspaceConfiguration): string[] {
+    const userExcludedFolders = configuration.get<string[]>('excludedFolders') ?? [];
+
+    return [...new Set([...defaultExcludeFolders, ...userExcludedFolders])];
+}
+
+async function writeTreeStructure(
+    treeStructure: string,
+    fileBaseName: string,
+    defaultSaveFolder: string,
+    settings: ExtensionSettings
+) {
+    if (settings.copyToFile) {
+        const uri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(path.join(
+                defaultSaveFolder,
+                `${fileBaseName}.${getFileExtension(settings.outputFormat)}`
+            )),
+            filters: getFileFilters(settings.outputFormat)
+        });
+
+        if (!uri) {
+            return;
+        }
+
+        await fs.promises.writeFile(uri.fsPath, treeStructure, 'utf8');
+        void vscode.window.showInformationMessage(`Tree structure saved to ${uri.fsPath}`);
+        return;
+    }
+
+    await vscode.env.clipboard.writeText(treeStructure);
+    void vscode.window.showInformationMessage('Tree structure copied to clipboard.');
+}
+
+async function pickWorkspaceFolder(): Promise<vscode.WorkspaceFolder | undefined> {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+
+    if (!workspaceFolders?.length) {
+        void vscode.window.showErrorMessage('No project is open.');
+        return undefined;
+    }
+
+    if (workspaceFolders.length === 1) {
+        return workspaceFolders[0];
+    }
+
+    const selection = await vscode.window.showQuickPick(
+        workspaceFolders.map(workspaceFolder => ({
+            label: workspaceFolder.name,
+            description: workspaceFolder.uri.fsPath,
+            workspaceFolder
+        })),
+        { placeHolder: 'Select workspace folder to copy' }
+    );
+
+    return selection?.workspaceFolder;
+}
+
+async function pickFolderUri(): Promise<vscode.Uri | undefined> {
+    const defaultUri = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const folderUris = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        defaultUri,
+        openLabel: 'Copy Folder Tree'
+    });
+
+    return folderUris?.[0];
+}
+
+function getFileExtension(outputFormat: OutputFormat): string {
+    if (outputFormat === 'markdown') {
+        return 'md';
+    }
+
+    if (outputFormat === 'json') {
+        return 'json';
+    }
+
+    return 'txt';
+}
+
+function getFileFilters(outputFormat: OutputFormat): Record<string, string[]> {
+    if (outputFormat === 'markdown') {
+        return { 'Markdown Files': ['md'], 'All Files': ['*'] };
+    }
+
+    if (outputFormat === 'json') {
+        return { 'JSON Files': ['json'], 'All Files': ['*'] };
+    }
+
+    return { 'Text Files': ['txt'], 'All Files': ['*'] };
+}
+
+function getAllowedValue<T extends string>(value: string | undefined, allowedValues: T[], fallback: T): T {
+    if (value && allowedValues.includes(value as T)) {
+        return value as T;
+    }
+
+    return fallback;
+}
+
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }
